@@ -1,88 +1,51 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-
-#アプリの外観をカスタマイズ
-st.set_page_config(
-   page_title="産学連携実習マッチングアプリ",
-   page_icon=":bar_chart:",
-   layout="wide",
-   initial_sidebar_state="collapsed" #サイドバーを初期状態で閉じる
-)
-
-#サンプルデータを作成
-data = pd.DataFrame({
-   'Company': ['相栄産業株式会社','相場産業株式会社','浅野金属工業株式会社','イーエヌシステム株式会社','五十嵐刃物工業株式会社','有限会社石田製作所','株式会社井関新潟製造所','株式会社エステーリンク','株式会社遠藤製作所','株式会社大谷製作所'],
-   'Lunch': ['あり', 'なし','あり', 'なし','あり', 'なし','あり', 'なし','あり', 'なし'],
-   'Field': ['開発', '生産', '生産', '開発', '生産', '生産', '生産', '企画, 開発, 生産', '開発', '企画, 開発, 生産'],
-   'Distance (km)': [5,10,15,20,20,15,10,5,5,10]
-})
-
-#グラフの作成
-fig = px.bar(data, x='Company', y='Distance (km)', color='Field', barmode='group',
-             title='会社ごとの大学からの距離', labels={'Distance (km)': '大学からの距離 (km)'},
-             template='plotly_dark')
-
-st.title("産学連携実習マッチングアプリ")
-st.caption("これは産学連携実習マッチングのテストアプリです")
-st.subheader("R＆Dマネジメント研究室")
-
-
-#テキストボックス
-name = st.text_input('名前')
-
-
-#レイアウトの調整
-col1, col2 = st.columns([1, 2])
-with col1:
-     #ボタン
-     submit_btn = st.button('送信')
-     cancel_btn = st.button('キャンセル')
-
-with col2:
-   #アニメーションを追加してグラフを表示
-   st.plotly_chart(fig, use_container_width=True, animate=True)
-
-if submit_btn:
-   st.text(f'ようこそ！{name}さん！')
-  
-
-#会社データ
-companies = {'相栄産業株式会社': {'昼食': 'あり', '分野': '開発', '距離': 5},
-             '相場産業株式会社': {'昼食': 'なし', '分野': '生産', '距離': 10},
-             '浅野金属工業株式会社': {'昼食': 'あり', '分野': '生産', '距離': 15},
-             'イーエヌシステム株式会社': {'昼食': 'なし', '分野': '開発', '距離': 20},
-             '五十嵐刃物工業株式会社': {'昼食': 'あり', '分野': '生産', '距離': 20},
-             '有限会社石田製作所': {'昼食': 'なし', '分野': '生産', '距離': 15},
-             '株式会社井関新潟製造所': {'昼食': 'あり', '分野': '生産', '距離': 10},
-             '株式会社エステーリンク': {'昼食': 'なし', '分野': ('企画', '開発', '生産'), '距離': 5},
-             '株式会社遠藤製作所': {'昼食': 'あり', '分野': '開発', '距離': 5},
-             '株式会社大谷製作所': {'昼食': 'なし', '分野': ('企画', '開発', '生産'), '距離': 10},
-             }
-
-
-#適切な会社を見つける関数を定義します。
-def find_best_company(lunch, field, max_distance):
-    matching_companies = []
-    for company, info in companies.items():
-        if info['昼食'] == lunch and field in info['分野'] and info['距離'] <= max_distance:
-           matching_companies.append(company)
-    return matching_companies
-
-#ウェブアプリ反映
-def main():
-   desired_lunch = st.radio('昼食はありますか？', ('あり', 'なし'))
-   desired_field = st.radio('どの分野に興味がありますか？', ('企画', '開発', '生産'))
-   max_distance = st.slider('大学からの最大距離(km)', min_value=0, max_value=20, step=1, value=20)
-
-#適切な会社を見つけて表示します。
-   best_companies = find_best_company(desired_lunch,desired_field, max_distance)
-   if best_companies:
-      st.success('あなたに合った会社は次のとおりです: ')
-      for company in best_companies:
-        st.write(company)
-   else:
-      st.warning('条件に合う会社が見つかりませんでした。')
-
-if __name__ == '__main__':
-   main()
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>産学連携実習マッチングアプリ</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>産学連携実習マッチングアプリ</h1>
+    <p>これは産学連携実習マッチングのテストアプリです</p>
+    <h2>R＆Dマネジメント研究室</h2>
+    <form>
+        <label for="name">名前:</label><br>
+        <input type="text" id="name" name="name"><br><br>
+        <input type="submit" value="送信">
+        <input type="button" value="キャンセル">
+    </form>
+    <div id="plotly_chart"></div>
+    <script>
+        var fig = {
+            data: [{
+                x: ['相栄産業株式会社', '相場産業株式会社', '浅野金属工業株式会社', 'イーエヌシステム株式会社', '五十嵐刃物工業株式会社', '有限会社石田製作所', '株式会社井関新潟製造所', '株式会社エステーリンク', '株式会社遠藤製作所', '株式会社大谷製作所'],
+                y: [5, 10, 15, 20, 20, 15, 10, 5, 5, 10],
+                type: 'bar',
+                marker: {
+                    color: ['#636efa', '#EF553B', '#00cc96', '#ab63fa', '#FFA15A', '#19d3f3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
+                }
+            }],
+            layout: {
+                title: '会社ごとの大学からの距離',
+                xaxis: { title: '会社名' },
+                yaxis: { title: '大学からの距離 (km)' },
+                template: 'plotly_dark'
+            }
+        };
+        Plotly.newPlot('plotly_chart', fig.data, fig.layout);
+    </script>
+    <h3>産業会社データ</h3>
+    <p>昼食あり、分野：開発、距離：5km</p>
+    <p>昼食なし、分野：生産、距離：10km</p>
+    <p>昼食あり、分野：生産、距離：15km</p>
+    <p>昼食なし、分野：開発、距離：20km</p>
+    <p>昼食あり、分野：生産、距離：20km</p>
+    <p>昼食なし、分野：生産、距離：15km</p>
+    <p>昼食あり、分野：生産、距離：10km</p>
+    <p>昼食なし、分野：企画, 開発, 生産、距離：5km</p>
+    <p>昼食あり、分野：開発、距離：5km</p>
+    <p>昼食なし、分野：企画, 開発, 生産、距離：10km</p>
+</body>
+</html>
