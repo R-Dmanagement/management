@@ -10,9 +10,14 @@
     <h1>産学連携実習マッチングアプリ</h1>
     <p>これは産学連携実習マッチングのテストアプリです</p>
     <h2>R＆Dマネジメント研究室</h2>
-    <form>
+    <form id="inputForm">
         <label for="name">名前:</label><br>
         <input type="text" id="name" name="name"><br><br>
+        <label>昼食:</label><br>
+        <input type="radio" id="lunch_yes" name="lunch" value="あり">
+        <label for="lunch_yes">あり</label>
+        <input type="radio" id="lunch_no" name="lunch" value="なし">
+        <label for="lunch_no">なし</label><br><br>
         <input type="submit" value="送信">
         <input type="button" value="キャンセル">
     </form>
@@ -35,6 +40,25 @@
             }
         };
         Plotly.newPlot('plotly_chart', fig.data, fig.layout);
+
+        // フォーム送信時のイベントハンドラ
+        document.getElementById('inputForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // デフォルトの送信動作をキャンセル
+
+            // 名前を取得
+            var name = document.getElementById('name').value;
+
+            // 昼食の選択を取得
+            var lunch;
+            if (document.getElementById('lunch_yes').checked) {
+                lunch = document.getElementById('lunch_yes').value;
+            } else if (document.getElementById('lunch_no').checked) {
+                lunch = document.getElementById('lunch_no').value;
+            }
+
+            // ユーザーが選択した内容を表示
+            alert('名前: ' + name + '\n昼食: ' + lunch);
+        });
     </script>
     <h3>産業会社データ</h3>
     <p>昼食あり、分野：開発、距離：5km</p>
