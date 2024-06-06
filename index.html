@@ -242,7 +242,7 @@
             <h3>出発地点から会社までの情報</h3>
             <p>出発地点から会社までの距離:</p>
             <p>ルートの表示:</p>
-            <iframe width="700" height="500" src="https://www.google.com/maps/embed/v1/directions?key=YOUR_API_KEY&origin=出発地点&destination=会社の住所&mode=driving" frameborder="0" style="border:0" allowfullscreen></iframe>
+            <iframe width="700" height="500" src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin=出発地点&destination=会社の住所&mode=driving" frameborder="0" style="border:0" allowfullscreen></iframe>
         </div>
     </div>
 </body>
