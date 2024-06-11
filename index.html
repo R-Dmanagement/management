@@ -246,42 +246,43 @@
                     "面白さ": "3"
                 }
             };
-        // 会社データを表示する関数
-        function displayCompanyData() {
-            var companyList = document.getElementById("companyList");
-            companyList.innerHTML = ""; // リストをリセット
-
-            for (var company in companyData) {
-                var listItem = document.createElement("li");
-                var textNode = document.createTextNode(company + ": " + JSON.stringify(companyData[company]));
-                listItem.appendChild(textNode);
-                companyList.appendChild(listItem);
+            var selectedCompanyData = companyData[selectedCompany];
+            var companyInfoHTML = "<li><h4>" + selectedCompany + "</h4><ul>";
+            for (var key in selectedCompanyData) {
+                if (selectedCompanyData.hasOwnProperty(key)) {
+                    companyInfoHTML += "<li>" + key + ": " + selectedCompanyData[key] + "</li>";
+                }
             }
-        }
-
-        // フォームのデータを取得して表示
-        document.getElementById("searchForm").addEventListener("submit", function (event) {
-            event.preventDefault(); // ページのリロードを防ぐ
-
-            var formData = new FormData(event.target);
-            var searchParams = new URLSearchParams(formData).toString();
-            alert("検索パラメータ: " + searchParams);
+            companyInfoHTML += "</ul></li>";
+            document.querySelector(".reportview-container div > ul").innerHTML = companyInfoHTML;
         });
 
-        // 出発地点を表示
         document.getElementById("departureForm").addEventListener("submit", function (event) {
-            event.preventDefault(); // ページのリロードを防ぐ
-
+            event.preventDefault();
             var departure = document.getElementById("departure").value;
-            var distanceInfo = document.getElementById("distanceInfo");
-            distanceInfo.textContent = "出発地点: " + departure;
+            var selectedCompany = document.getElementById("selected_company").value;
+            var companyData = {
+                "川﨑株式会社": "新潟県三条市下保内４０１ー１７",
+                "株式会社小林設計": "新潟県三条市南新保１５－７",
+                "株式会社齋鐵": "新潟県三条市井戸場８４－８",
+                "株式会社三栄製作所": "新潟県燕市小池５０７３",
+                "株式会社内山熔接工業": "新潟県新潟市西蒲区小吉１９３０－１",
+                "株式会社大谷製作所": "新潟県燕市吉田下中野１４８３",
+                "株式会社東陽理化学研究所": "新潟県西蒲原郡弥彦村大戸７６１－１",
+                "株式会社プラスワイズ": "新潟県三条市柳川新田９９７",
+                "株式会社スリーピークス技研": "新潟県三条市塚野目２１７１",
+                "北陸工業株式会社": "新潟県三条市吉野屋甲４４５",
+                "富士印刷株式会社": "新潟県三条市猪子場新田１１２２－１",
+                "株式会社タダフサ": "新潟県三条市東本成寺２７－１６",
+                "株式会社ワイヤード": "新潟県三条市北新保2丁目４－１５"
+            };
+            var companyAddress = companyData[selectedCompany];
+            var distanceInfoHTML = "<p>出発地点から" + selectedCompany + "までの距離:</p>";
+            var routeInfoHTML = "<p>ルートの表示:</p><iframe width=\"700\" height=\"500\" frameborder=\"0\" style=\"border:0\" allowfullscreen src=\"https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin=" + departure + "&destination=" + companyAddress + "&mode=driving\"></iframe>";
+            document.getElementById("distanceInfo").innerHTML = distanceInfoHTML;
+            document.getElementById("routeInfo").innerHTML = routeInfoHTML;
         });
-
-        // 会社データを表示
-        displayCompanyData();
     </script>
 </body>
 
 </html>
-
-
