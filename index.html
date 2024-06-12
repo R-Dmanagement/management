@@ -274,7 +274,7 @@
             };
             var companyAddress = companyData[selectedCompany];
             var distanceInfoHTML = "<p>出発地点から" + selectedCompany + "までの距離:</p>";
-            var routeInfoHTML = "<p>ルートの表示:</p><iframe width=\"700\" height=\"500\" frameborder=\"0\" style=\"border:0\" allowfullscreen src=\"https://www.google.com/maps/embed/v1/directions?key=YOUR_API_KEY&origin=" + departure + "&destination=" + companyAddress + "&mode=driving\"></iframe>";
+            var routeInfoHTML = "<p>ルートの表示:</p><iframe width=\"700\" height=\"500\" frameborder=\"0\" style=\"border:0\" allowfullscreen src=\"https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin=" + departure + "&destination=" + companyAddress + "&mode=driving\"></iframe>";
             document.getElementById("distanceInfo").innerHTML = distanceInfoHTML;
             document.getElementById("routeInfo").innerHTML = routeInfoHTML;
         });
