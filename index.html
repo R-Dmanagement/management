@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -9,11 +9,6 @@
         .reportview-container {
             background: url("background.jpg") no-repeat center center fixed;
             background-size: cover;
-            padding: 20px;
-            color: #fff;
-        }
-        form {
-            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -21,7 +16,7 @@
 <body>
     <div class="reportview-container">
         <h1>産学連携実習マッチングアプリ</h1>
-        <p>これは産学連携実習マッチングのテストアプリです。</p>
+        <p>これは産学連携実習マッチングのテストアプリです</p>
         <h2>R＆Dマネジメント研究室</h2>
 
         <!-- Streamlitコンポーネント -->
@@ -71,10 +66,10 @@
                 <option value="5">5 - 非常に面白い</option>
             </select><br><br>
 
-            <input type="submit" value="検索">
+            <input type="submit" value="Submit">
         </form>
 
-        <!-- 選択された会社の情報 -->
+        <!-- Streamlitからの出力 -->
         <div>
             <p>該当する会社が見つかりました:</p>
             <select id="selected_company" name="selected_company">
@@ -98,7 +93,7 @@
         <form id="departureForm" method="get">
             <label for="departure">出発地点:</label><br>
             <input type="text" id="departure" name="departure"><br><br>
-            <input type="submit" value="検索">
+            <input type="submit" value="Submit">
         </form>
 
         <!-- 会社データ -->
@@ -251,7 +246,6 @@
                     "面白さ": "3"
                 }
             };
-
             var selectedCompanyData = companyData[selectedCompany];
             var companyInfoHTML = "<li><h4>" + selectedCompany + "</h4><ul>";
             for (var key in selectedCompanyData) {
@@ -270,7 +264,17 @@
             var companyData = {
                 "川﨑株式会社": "新潟県三条市下保内４０１ー１７",
                 "株式会社小林設計": "新潟県三条市南新保１５－７",
-                // 他の会社データも同様に追加
+                "株式会社齋鐵": "新潟県三条市井戸場８４－８",
+                "株式会社三栄製作所": "新潟県燕市小池５０７３",
+                "株式会社内山熔接工業": "新潟県新潟市西蒲区小吉１９３０－１",
+                "株式会社大谷製作所": "新潟県燕市吉田下中野１４８３",
+                "株式会社東陽理化学研究所": "新潟県西蒲原郡弥彦村大戸７６１－１",
+                "株式会社プラスワイズ": "新潟県三条市柳川新田９９７",
+                "株式会社スリーピークス技研": "新潟県三条市塚野目２１７１",
+                "北陸工業株式会社": "新潟県三条市吉野屋甲４４５",
+                "富士印刷株式会社": "新潟県三条市猪子場新田１１２２－１",
+                "株式会社タダフサ": "新潟県三条市東本成寺２７－１６",
+                "株式会社ワイヤード": "新潟県三条市北新保2丁目４－１５"
             };
             var companyAddress = companyData[selectedCompany];
             var distanceInfoHTML = "<p>出発地点から" + selectedCompany + "までの距離:</p>";
