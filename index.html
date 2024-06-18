@@ -250,7 +250,7 @@
                     selectedProfessors.some(function (professor) {
                         return data["担当教授"].includes(professor);
                     }) &&
-                    (lunchProvided === "なし" || data["昼食"] === "なし") &&
+                    (lunchProvided === "あり" || data["昼食"] === "なし") &&
                     parseInt(data["面白さ"]) >= interestingLevel;
             });
 
@@ -323,7 +323,7 @@
 
             // 初期マップの表示
             var mapFrame = document.getElementById("mapFrame");
-            mapFrame.src = "https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=新潟県三条市下保内４０１ー１７";
+            mapFrame.src = "https://www.google.com/maps/embed/v1/place?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&q=新潟県三条市下保内４０１ー１７";
 
             // 初期会社データの表示
             var companyDataList = document.getElementById("companyDataList");
