@@ -10,7 +10,8 @@
             background: url("background.jpg") no-repeat center center fixed;
             background-size: cover;
             padding: 20px;
-            color: white;
+            color: black; /* テキスト色を黒に変更 */
+            font-size: 16px; /* フォントサイズを調整 */
         }
 
         form {
@@ -154,13 +155,13 @@
                 },
                 "株式会社東陽理化学研究所": {
                     "住所": "新潟県西蒲原郡弥彦村大戸７６１－１",
-                    "昼食": "なし",
+                    "昼食": "あり",
                     "分野": "開発",
                     "距離": "15 km",
-                    "担当教授": "永澤先生",
-                    "実習時間": "9:00 - 17:00",
+                    "担当教授": "茨木先生",
+                    "実習時間": "8:30 - 15:30",
                     "面白さ": "5"
-                },
+                }
                 "株式会社プラスワイズ": {
                     "住所": "新潟県三条市柳川新田９９７",
                     "昼食": "あり",
@@ -217,110 +218,90 @@
                 }
             };
 
-        var googleMapsUrl = "https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin={origin}&destination={destination}&mode=driving";
 
-        document.getElementById('searchForm').addEventListener('submit', function (event) {
+        var searchForm = document.getElementById("searchForm");
+        var companyInfo = document.getElementById("companyInfo");
+        var selectedCompany = document.getElementById("selected_company");
+
+        // 検索フォームの送信時の処理
+        searchForm.addEventListener("submit", function(event) {
             event.preventDefault();
-            var selectedFields = getSelectedFields();
-            var selectedProfessors = getSelectedProfessors();
-            var selectedInteresting = document.getElementById('interesting').value;
 
-            var matchingCompanies = findMatchingCompanies(selectedFields, selectedProfessors, selectedInteresting);
+            // 選択された昼食の提供の値を取得
+            var lunch = searchForm.querySelector('input[name="lunch"]:checked').value;
 
-            displayMatchingCompanies(matchingCompanies);
+            // 選択された興味のある分野の値を取得
+            var field = searchForm.querySelector("#field").value;
+
+            // 選択された担当教授の値を取得
+            var professors = Array.from(searchForm.querySelector("#professors").selectedOptions)
+                .map(option => option.value);
+
+            // 選択された実習の面白さの値を取得
+            var interesting = searchForm.querySelector("#interesting").value;
+
+            // 選択された条件に合致する会社を抽出
+            var matchingCompanies = Object.keys(companyData).filter(function(company) {
+                return (companyData[company]["昼食"] === lunch &&
+                    companyData[company]["分野"].includes(field) &&
+                    professors.every(professor => companyData[company]["担当教授"].includes(professor)) &&
+                    companyData[company]["面白さ"] >= interesting);
+            });
+
+            // 選択肢を更新
+            updateCompanyOptions(matchingCompanies);
+
+            // 選択された会社が表示されるようにする
+            companyInfo.style.display = "block";
         });
 
-        document.getElementById('departureForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-            var departure = document.getElementById('departure').value;
-            var selectedCompany = document.getElementById('selected_company').value;
+        // 選択された会社の選択肢を更新する関数
+        function updateCompanyOptions(companies) {
+            selectedCompany.innerHTML = ""; // 選択肢をクリア
 
-            if (departure && selectedCompany) {
-                var companyAddress = companyData[selectedCompany]['住所'];
-                var origin = encodeURIComponent(departure);
-                var destination = encodeURIComponent(companyAddress);
-
-                var mapUrl = googleMapsUrl.replace('{origin}', origin).replace('{destination}', destination);
-                document.getElementById('mapFrame').src = mapUrl;
-
-                document.getElementById('distanceInfo').textContent = '出発地点からの距離: 計算中...'; // ここで適切な距離を表示するための処理を追加する
-
-                var routeInfo = 'ルートの表示: ' + departure + ' から ' + companyAddress;
-                document.getElementById('routeInfo').textContent = routeInfo;
-            } else {
-                alert('出発地点と会社を選択してください。');
-            }
-        });
-
-        function getSelectedFields() {
-            var selectedFields = [];
-            var options = document.getElementById('field').options;
-
-            for (var i = 0; i < options.length; i++) {
-                if (options[i].selected) {
-                    selectedFields.push(options[i].value);
-                }
-            }
-
-            return selectedFields;
-        }
-
-        function getSelectedProfessors() {
-            var selectedProfessors = [];
-            var options = document.getElementById('professors').options;
-
-            for (var i = 0; i < options.length; i++) {
-                if (options[i].selected) {
-                    selectedProfessors.push(options[i].value);
-                }
-            }
-
-            return selectedProfessors;
-        }
-
-        function findMatchingCompanies(fields, professors, interesting) {
-            var matchingCompanies = [];
-
-            for (var company in companyData) {
-                var companyInfo = companyData[company];
-
-                // 分野の一致を確認
-                var fieldMatch = fields.some(function (field) {
-                    return companyInfo['分野'].includes(field);
-                });
-
-                // 担当教授の一致を確認
-                var professorMatch = professors.some(function (professor) {
-                    return companyInfo['担当教授'].includes(professor);
-                });
-
-                // 面白さの一致を確認
-                var interestingMatch = companyInfo['面白さ'] >= interesting;
-
-                // すべての条件が一致した場合、会社をマッチングリストに追加
-                if (fieldMatch && professorMatch && interestingMatch) {
-                    matchingCompanies.push(company);
-                }
-            }
-
-            return matchingCompanies;
-        }
-
-        function displayMatchingCompanies(companies) {
-            var selectElement = document.getElementById('selected_company');
-            selectElement.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
-
-            companies.forEach(function (company) {
-                var option = document.createElement('option');
+            // 選択肢を追加
+            companies.forEach(function(company) {
+                var option = document.createElement("option");
                 option.value = company;
                 option.textContent = company;
-                selectElement.appendChild(option);
+                selectedCompany.appendChild(option);
             });
         }
+
+        var departureForm = document.getElementById("departureForm");
+        var mapInfo = document.getElementById("mapInfo");
+        var distanceInfo = document.getElementById("distanceInfo");
+        var routeInfo = document.getElementById("routeInfo");
+        var mapFrame = document.getElementById("mapFrame");
+
+        // 出発地点のフォームの送信時の処理
+        departureForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // 出発地点の値を取得
+            var departure = departureForm.querySelector("#departure").value;
+
+            // 出発地点からの距離を取得（ここでは仮の値を設定）
+            var distance = "10 km";
+
+            // マップを表示する
+            mapInfo.style.display = "block";
+            distanceInfo.textContent = "出発地点からの距離: " + distance;
+
+            // ルートの表示（ここでは仮の情報）
+            routeInfo.textContent = "ルートの表示: 出発地点 → 会社の所在地";
+
+            // Google Mapsの埋め込みURL（ここでは仮のURL）
+            var mapUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3240.256245792415!2d139.0195194152585!3d37.703809622978586!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6018f4897a9f2f5d%3A0x23b2ce8eb20b80f5!2z44CSNDg5LTExMTMg56aP5bKh55yM5aSn5a2m6YGT6YeO77yS5LiB55uu77yR77yV4oiS77yT!5e0!3m2!1sja!2sjp!4v1595561728577!5m2!1sja!2sjp";
+
+            // マップのURLを設定
+            mapFrame.src = mapUrl;
+        });
     </script>
 </body>
 
 </html>
+
 
 
 
