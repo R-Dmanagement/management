@@ -9,6 +9,13 @@
         .reportview-container {
             background: url("background.jpg") no-repeat center center fixed;
             background-size: cover;
+            padding: 20px;
+            color: black; /* テキスト色を黒に変更 */
+            font-size: 16px; /* フォントサイズを調整 */
+        }
+
+        form {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -17,10 +24,10 @@
     <div class="reportview-container">
         <h1>産学連携実習マッチングアプリ</h1>
         <p>これは産学連携実習マッチングのテストアプリです</p>
-        <h2>R＆Dマネジメント研究室</h2>
+        <h2>R&Dマネジメント研究室</h2>
 
-        <!-- Streamlitコンポーネント -->
-        <form id="searchForm" method="get">
+        <!-- 検索フォーム -->
+        <form id="searchForm">
             <label for="lunch">昼食の提供:</label><br>
             <input type="radio" id="lunchYes" name="lunch" value="あり">
             <label for="lunchYes">あり</label><br>
@@ -34,10 +41,6 @@
                 <option value="生産">生産</option>
             </select><br><br>
 
-            <label for="max_distance">大学からの最大距離(km):</label><br>
-            <input type="range" id="max_distance" name="max_distance" min="0" max="20" value="20">
-            <br><br>
-
             <label for="professors">担当教授:</label><br>
             <select id="professors" name="professors" multiple>
                 <option value="江面先生">江面先生</option>
@@ -50,13 +53,6 @@
                 <option value="茨木先生">茨木先生</option>
             </select><br><br>
 
-            <label for="start_time">実習開始時間:</label><br>
-            <input type="time" id="start_time" name="start_time" value="08:00"><br><br>
-
-            <label for="end_time">実習終了時間:</label><br>
-            <input type="time" id="end_time" name="end_time" value="15:00"><br><br>
-
-            <!-- 新しい選択肢として実習の面白さを追加 -->
             <label for="interesting">実習の面白さ:</label><br>
             <select id="interesting" name="interesting">
                 <option value="1">1 - あまり面白くない</option>
@@ -66,68 +62,43 @@
                 <option value="5">5 - 非常に面白い</option>
             </select><br><br>
 
-            <input type="submit" value="Submit">
+            <input type="submit" value="会社を検索">
         </form>
 
-        <!-- Streamlitからの出力 -->
-        <div>
-            <p>該当する会社が見つかりました:</p>
+        <!-- 選択された会社表示 -->
+        <div id="companyInfo" style="display: none;">
+            <h3>該当する会社が見つかりました:</h3>
             <select id="selected_company" name="selected_company">
-                <option value="川﨑株式会社">川﨑株式会社</option>
-                <option value="株式会社小林設計">株式会社小林設計</option>
-                <option value="株式会社齋鐵">株式会社齋鐵</option>
-                <option value="株式会社三栄製作所">株式会社三栄製作所</option>
-                <option value="株式会社内山熔接工業">株式会社内山熔接工業</option>
-                <option value="株式会社大谷製作所">株式会社大谷製作所</option>
-                <option value="株式会社東陽理化学研究所">株式会社東陽理化学研究所</option>
-                <option value="株式会社プラスワイズ">株式会社プラスワイズ</option>
-                <option value="株式会社スリーピークス技研">株式会社スリーピークス技研</option>
-                <option value="北陸工業株式会社">北陸工業株式会社</option>
-                <option value="富士印刷株式会社">富士印刷株式会社</option>
-                <option value="株式会社タダフサ">株式会社タダフサ</option>
-                <option value="株式会社ワイヤード">株式会社ワイヤード</option>
+                <option value="" disabled selected>会社を選択してください</option>
             </select>
         </div>
 
-        <!-- 出発地点の入力 -->
-        <form id="departureForm" method="get">
+        <!-- 出発地点の入力フォーム -->
+        <form id="departureForm">
             <label for="departure">出発地点:</label><br>
             <input type="text" id="departure" name="departure"><br><br>
-            <input type="submit" value="Submit">
+            <input type="submit" value="出発地点から距離を確認">
         </form>
 
-        <!-- 会社データ -->
-        <div>
+        <!-- 会社データ表示 -->
+        <div id="companyData" style="display: none;">
             <h3>会社データ</h3>
             <ul id="companyDataList">
                 <!-- ここに会社データが表示されます -->
             </ul>
         </div>
 
-        <!-- 会社までの距離とマップの表示 -->
-        <div>
+        <!-- 出発地点からの距離とマップ表示 -->
+        <div id="mapInfo" style="display: none;">
             <h3>出発地点から会社までの情報</h3>
-            <p id="distanceInfo">出発地点から会社までの距離:</p>
+            <p id="distanceInfo">出発地点からの距離:</p>
             <p id="routeInfo">ルートの表示:</p>
             <iframe id="mapFrame" width="700" height="500" frameborder="0" style="border:0" allowfullscreen></iframe>
         </div>
     </div>
 
     <script>
-        document.getElementById("searchForm").addEventListener("submit", function (event) {
-            event.preventDefault();
-            var formData = new FormData(this);
-            var lunch = formData.get("lunch");
-            var field = formData.get("field");
-            var maxDistance = formData.get("max_distance");
-            var professors = formData.getAll("professors");
-            var startTime = formData.get("start_time");
-            var endTime = formData.get("end_time");
-            var interesting = formData.get("interesting"); // 追加された実習の面白さ
-
-            // 選択された会社の情報を表示するための処理
-            var selectedCompany = document.getElementById("selected_company").value;
-            var companyData = {
+        var companyData = {
                 "川﨑株式会社": {
                     "住所": "新潟県三条市下保内４０１ー１７",
                     "昼食": "あり",
@@ -246,42 +217,130 @@
                     "面白さ": "3"
                 }
             };
-            var selectedCompanyData = companyData[selectedCompany];
-            var companyInfoHTML = "<li><h4>" + selectedCompany + "</h4><ul>";
-            for (var key in selectedCompanyData) {
-                if (selectedCompanyData.hasOwnProperty(key)) {
-                    companyInfoHTML += "<li>" + key + ": " + selectedCompanyData[key] + "</li>";
-                }
-            }
-            companyInfoHTML += "</ul></li>";
-            document.querySelector(".reportview-container div > ul").innerHTML = companyInfoHTML;
+
+        // 検索フォームの送信時の処理
+        document.getElementById("searchForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // 選択された昼食の提供の値を取得
+            var lunch = document.querySelector('input[name="lunch"]:checked').value;
+
+            // 選択された興味のある分野の値を取得
+            var field = document.getElementById("field").value;
+
+            // 選択された担当教授の値を取得
+            var professors = Array.from(document.getElementById("professors").selectedOptions)
+                .map(option => option.value);
+
+            // 選択された実習の面白さの値を取得
+            var interesting = parseInt(document.getElementById("interesting").value);
+
+            // 選択された条件に合致する会社を抽出
+            var matchingCompanies = Object.keys(companyData).filter(function(company) {
+                // 分野の比較
+                var fields = companyData[company]["分野"].split(', ').map(field => field.trim());
+                var fieldMatch = fields.includes(field);
+
+                // 担当教授の比較
+                var professorMatch = professors.every(professor => companyData[company]["担当教授"].includes(professor));
+
+                // 面白さの比較
+                var interestMatch = parseInt(companyData[company]["面白さ"]) >= interesting;
+
+                // 全ての条件を満たす場合にtrueを返す
+                return companyData[company]["昼食"] === lunch &&
+                    fieldMatch &&
+                    professorMatch &&
+                    interestMatch;
+            });
+
+            // 選択肢を更新
+            updateCompanyOptions(matchingCompanies);
+
+            // 選択された会社が表示されるようにする
+            document.getElementById("companyInfo").style.display = "block";
         });
 
-        document.getElementById("departureForm").addEventListener("submit", function (event) {
-            event.preventDefault();
-            var departure = document.getElementById("departure").value;
-            var selectedCompany = document.getElementById("selected_company").value;
-            var companyData = {
-                "川﨑株式会社": "新潟県三条市下保内４０１ー１７",
-                "株式会社小林設計": "新潟県三条市南新保１５－７",
-                "株式会社齋鐵": "新潟県三条市井戸場８４－８",
-                "株式会社三栄製作所": "新潟県燕市小池５０７３",
-                "株式会社内山熔接工業": "新潟県新潟市西蒲区小吉１９３０－１",
-                "株式会社大谷製作所": "新潟県燕市吉田下中野１４８３",
-                "株式会社東陽理化学研究所": "新潟県西蒲原郡弥彦村大戸７６１－１",
-                "株式会社プラスワイズ": "新潟県三条市柳川新田９９７",
-                "株式会社スリーピークス技研": "新潟県三条市塚野目２１７１",
-                "北陸工業株式会社": "新潟県三条市吉野屋甲４４５",
-                "富士印刷株式会社": "新潟県三条市猪子場新田１１２２－１",
-                "株式会社タダフサ": "新潟県三条市東本成寺２７－１６",
-                "株式会社ワイヤード": "新潟県三条市北新保2丁目４－１５"
-            };
-            var companyAddress = companyData[selectedCompany];
-            var distanceInfoHTML = "<p>出発地点から" + selectedCompany + "までの距離:</p>";
-            var routeInfoHTML = "<p>ルートの表示:</p><iframe width=\"700\" height=\"500\" frameborder=\"0\" style=\"border:0\" allowfullscreen src=\"https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin=" + departure + "&destination=" + companyAddress + "&mode=driving\"></iframe>";
-            document.getElementById("distanceInfo").innerHTML = distanceInfoHTML;
-            document.getElementById("routeInfo").innerHTML = routeInfoHTML;
+        // 選択された会社が変更された時の処理
+        document.getElementById("selected_company").addEventListener("change", function() {
+            var selectedCompany = this.value;
+
+            // 会社のデータを表示
+            displayCompanyData(selectedCompany);
+
+            // Google Mapsの地図を表示
+            displayMap(selectedCompany);
         });
+
+        // 出発地点の入力フォームの送信時の処理
+        document.getElementById("departureForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // 出発地点を取得
+            var departure = document.getElementById("departure").value;
+
+            // 選択された会社を取得
+            var selectedCompany = document.getElementById("selected_company").value;
+
+            // 出発地点から会社までの情報を表示
+            displayDistanceInfo(departure, selectedCompany);
+        });
+
+        // 選択肢の更新
+        function updateCompanyOptions(companies) {
+            var select = document.getElementById("selected_company");
+            select.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
+
+            companies.forEach(function(company) {
+                var option = document.createElement("option");
+                option.value = company;
+                option.textContent = company;
+                select.appendChild(option);
+            });
+        }
+
+        // 会社のデータを表示
+        function displayCompanyData(company) {
+            var companyDataDiv = document.getElementById("companyData");
+            companyDataDiv.style.display = "block";
+
+            var companyDataList = document.getElementById("companyDataList");
+            companyDataList.innerHTML = ""; // リセット
+
+            var data = companyData[company];
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    var listItem = document.createElement("li");
+                    listItem.textContent = `${key}: ${data[key]}`;
+                    companyDataList.appendChild(listItem);
+                }
+            }
+        }
+
+        // Google Mapsの地図を表示
+        function displayMap(company) {
+            var mapInfoDiv = document.getElementById("mapInfo");
+            mapInfoDiv.style.display = "block";
+
+            // Google Mapsの埋め込み地図URLを生成
+            var address = companyData[company]["住所"];
+            var mapsUrl = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(address)}&key=YOUR_API_KEY`;
+
+            // iframeのsrc属性に設定
+            var mapFrame = document.getElementById("mapFrame");
+            mapFrame.src = mapsUrl;
+        }
+
+        // 出発地点からの距離とルート情報を表示
+        function displayDistanceInfo(departure, company) {
+            var distanceInfo = document.getElementById("distanceInfo");
+            var routeInfo = document.getElementById("routeInfo");
+
+            // ここで出発地点からの距離とルート情報を表示するための実装を行う
+            // この例では、単にテキストとして表示する
+            distanceInfo.textContent = `${departure} から ${company} までの距離: ${companyData[company]["距離"]}`;
+            routeInfo.textContent = `出発地点からのルート: ここにルート情報を表示`;
+        }
     </script>
 </body>
 
