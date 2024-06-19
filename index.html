@@ -217,72 +217,111 @@
                 }
             };
 
+        var googleMapsUrl = "https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin={origin}&destination={destination}&mode=driving";
 
-        // 検索フォームの送信を処理
-        document.getElementById("searchForm").addEventListener("submit", function (event) {
-            event.preventDefault(); // デフォルトの送信をキャンセル
+        document.getElementById('searchForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            var selectedFields = getSelectedFields();
+            var selectedProfessors = getSelectedProfessors();
+            var selectedInteresting = document.getElementById('interesting').value;
 
-            var formData = new FormData(event.target);
+            var matchingCompanies = findMatchingCompanies(selectedFields, selectedProfessors, selectedInteresting);
 
-            var selectedField = formData.get("field");
-            var selectedProfessors = formData.getAll("professors");
-            var lunchProvided = formData.get("lunch");
-            var interestingLevel = parseInt(formData.get("interesting"));
+            displayMatchingCompanies(matchingCompanies);
+        });
 
-            var matchedCompanies = Object.keys(companyData).filter(function (company) {
-                var data = companyData[company];
-                return data["分野"].includes(selectedField) &&
-                    selectedProfessors.some(function (professor) {
-                        return data["担当教授"].includes(professor);
-                    }) &&
-                    (lunchProvided === "あり" || data["昼食"] === "なし") &&
-                    data["面白さ"] >= interestingLevel;
-            });
+        document.getElementById('departureForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            var departure = document.getElementById('departure').value;
+            var selectedCompany = document.getElementById('selected_company').value;
 
-            var selectCompanyElement = document.getElementById("selected_company");
-            selectCompanyElement.innerHTML = "";
+            if (departure && selectedCompany) {
+                var companyAddress = companyData[selectedCompany]['住所'];
+                var origin = encodeURIComponent(departure);
+                var destination = encodeURIComponent(companyAddress);
 
-            if (matchedCompanies.length === 0) {
-                var option = document.createElement("option");
-                option.text = "条件に合う会社が見つかりませんでした";
-                selectCompanyElement.add(option);
+                var mapUrl = googleMapsUrl.replace('{origin}', origin).replace('{destination}', destination);
+                document.getElementById('mapFrame').src = mapUrl;
+
+                document.getElementById('distanceInfo').textContent = '出発地点からの距離: 計算中...'; // ここで適切な距離を表示するための処理を追加する
+
+                var routeInfo = 'ルートの表示: ' + departure + ' から ' + companyAddress;
+                document.getElementById('routeInfo').textContent = routeInfo;
             } else {
-                matchedCompanies.forEach(function (company) {
-                    var option = document.createElement("option");
-                    option.text = company;
-                    selectCompanyElement.add(option);
+                alert('出発地点と会社を選択してください。');
+            }
+        });
+
+        function getSelectedFields() {
+            var selectedFields = [];
+            var options = document.getElementById('field').options;
+
+            for (var i = 0; i < options.length; i++) {
+                if (options[i].selected) {
+                    selectedFields.push(options[i].value);
+                }
+            }
+
+            return selectedFields;
+        }
+
+        function getSelectedProfessors() {
+            var selectedProfessors = [];
+            var options = document.getElementById('professors').options;
+
+            for (var i = 0; i < options.length; i++) {
+                if (options[i].selected) {
+                    selectedProfessors.push(options[i].value);
+                }
+            }
+
+            return selectedProfessors;
+        }
+
+        function findMatchingCompanies(fields, professors, interesting) {
+            var matchingCompanies = [];
+
+            for (var company in companyData) {
+                var companyInfo = companyData[company];
+
+                // 分野の一致を確認
+                var fieldMatch = fields.some(function (field) {
+                    return companyInfo['分野'].includes(field);
                 });
+
+                // 担当教授の一致を確認
+                var professorMatch = professors.some(function (professor) {
+                    return companyInfo['担当教授'].includes(professor);
+                });
+
+                // 面白さの一致を確認
+                var interestingMatch = companyInfo['面白さ'] >= interesting;
+
+                // すべての条件が一致した場合、会社をマッチングリストに追加
+                if (fieldMatch && professorMatch && interestingMatch) {
+                    matchingCompanies.push(company);
+                }
             }
-        });
 
-        // 出発地点の送信を処理
-        document.getElementById("departureForm").addEventListener("submit", function (event) {
-            event.preventDefault(); // デフォルトの送信をキャンセル
+            return matchingCompanies;
+        }
 
-            var formData = new FormData(event.target);
-            var departure = formData.get("departure");
+        function displayMatchingCompanies(companies) {
+            var selectElement = document.getElementById('selected_company');
+            selectElement.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
 
-            var selectedCompany = document.getElementById("selected_company").value;
-
-            if (selectedCompany in companyData) {
-                var companyAddress = companyData[selectedCompany]["住所"];
-                var mapFrame = document.getElementById("mapFrame");
-
-                var googleMapsUrl = "https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin=" +
-                    encodeURIComponent(departure) + "&destination=" + encodeURIComponent(companyAddress);
-
-                mapFrame.src = googleMapsUrl;
-
-                document.getElementById("distanceInfo").textContent = "出発地点から " + companyData[selectedCompany]["距離"] + " の距離です。";
-                document.getElementById("routeInfo").textContent = "ルートの表示: " + departure + " から " + companyAddress + " までのルート";
-            } else {
-                alert("会社を選択してください。");
-            }
-        });
+            companies.forEach(function (company) {
+                var option = document.createElement('option');
+                option.value = company;
+                option.textContent = company;
+                selectElement.appendChild(option);
+            });
+        }
     </script>
 </body>
 
 </html>
+
 
 
 
