@@ -94,6 +94,10 @@
             </ul>
         </div>
 
+        <!-- 距離情報とルート情報表示 -->
+        <div id="distanceInfo"></div>
+        <div id="routeInfo"></div>
+
         <!-- Google Maps表示用のDIV -->
         <div id="map"></div>
     </div>
@@ -224,8 +228,12 @@
         var geocoder;
 
         function initMap() {
+            // 初期位置（サンフランシスコの緯度経度）
+            var sanFrancisco = { lat: 37.7749, lng: -122.4194 };
+
+            // 地図の初期化
             map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 37.774929, lng: -122.419416 }, // 初期位置（サンフランシスコの緯度経度）
+                center: sanFrancisco, // サンフランシスコの緯度経度
                 zoom: 8 // ズームレベル
             });
 
@@ -361,4 +369,5 @@
 </body>
 
 </html>
+
 
