@@ -68,6 +68,9 @@
                 <option value="5">5 - 非常に面白い</option>
             </select><br><br>
 
+            <label for="trainingTime">実習時間:</label><br>
+            <input type="text" id="trainingTime" name="trainingTime" placeholder="例: 8:00 - 17:00"><br><br>
+
             <input type="submit" value="会社を検索">
         </form>
 
@@ -223,186 +226,141 @@
                 }
             };
 
-        var companiesMatchingCriteria = []; // 条件に合った会社を格納する配列
 
-        // ページ読み込み時に実行
-        document.addEventListener('DOMContentLoaded', function () {
-            var searchForm = document.getElementById('searchForm');
-            var companyInfo = document.getElementById('companyInfo');
-            var selectedCompany = document.getElementById('selected_company');
-            var companyDataList = document.getElementById('companyDataList');
-            var departureForm = document.getElementById('departureForm');
-            var companyDataDiv = document.getElementById('companyData');
-            var mapDiv = document.getElementById('map');
-            var distanceInfoDiv = document.getElementById('distanceInfo');
-            var routeInfoDiv = document.getElementById('routeInfo');
+        // 検索フォームの処理
+        document.getElementById('searchForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // デフォルトのフォーム送信を防止
 
-            // 会社検索フォームの送信時の処理
-            searchForm.addEventListener('submit', function (event) {
-                event.preventDefault(); // フォームのデフォルトの送信を防止
+            var formData = new FormData(this);
 
-                var lunchOption = document.querySelector('input[name="lunch"]:checked').value;
-                var fieldOption = document.getElementById('field').value;
-                var professorsOptions = [...document.getElementById('professors').selectedOptions].map(opt => opt.value);
-                var interestingOption = document.getElementById('interesting').value;
+            // 検索条件に一致する会社を取得
+            var selectedCompanies = getMatchingCompanies(formData);
 
-                // 選択条件に合う会社を抽出
-                companiesMatchingCriteria = Object.keys(companyData).filter(function (companyName) {
-                    var company = companyData[companyName];
-                    return company["昼食"] === lunchOption &&
-                        company["分野"].includes(fieldOption) &&
-                        professorsOptions.includes(company["担当教授"]) &&
-                        parseInt(company["面白さ"]) >= parseInt(interestingOption);
-                });
-
-                // 選択肢のセレクトボックスに結果を表示
-                selectedCompany.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
-                companiesMatchingCriteria.forEach(function (companyName) {
-                    var option = document.createElement('option');
-                    option.value = companyName;
-                    option.textContent = companyName;
-                    selectedCompany.appendChild(option);
-                });
-
-                companyInfo.style.display = 'block'; // 会社選択のセクションを表示
-                companyDataDiv.style.display = 'none'; // 会社データのセクションを非表示にする
-                mapDiv.style.display = 'none'; // マップを非表示にする
-                distanceInfoDiv.innerHTML = ''; // 距離情報をクリアする
-                routeInfoDiv.innerHTML = ''; // ルート情報をクリアする
+            // 会社選択のセレクトボックスに結果を反映
+            var selectCompanyDropdown = document.getElementById('selected_company');
+            selectCompanyDropdown.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
+            selectedCompanies.forEach(function (company) {
+                var option = document.createElement('option');
+                option.value = company;
+                option.text = company;
+                selectCompanyDropdown.appendChild(option);
             });
 
-            // 会社選択時の処理
-            selectedCompany.addEventListener('change', function () {
-                var selectedCompanyName = selectedCompany.value;
+            // 会社情報を表示するためのセクションを表示
+            var companyInfoSection = document.getElementById('companyInfo');
+            companyInfoSection.style.display = 'block';
 
-                if (selectedCompanyName) {
-                    var company = companyData[selectedCompanyName];
-
-                    // 会社データを表示
-                    companyDataList.innerHTML = '';
-                    Object.keys(company).forEach(function (key) {
-                        var li = document.createElement('li');
-                        li.textContent = `${key}: ${company[key]}`;
-                        companyDataList.appendChild(li);
-                    });
-
-                    companyDataDiv.style.display = 'block'; // 会社データのセクションを表示
-                    mapDiv.style.display = 'block'; // マップを表示
-
-                    // Google Mapsを初期化して表示
-                    initMap(company["住所"]);
-
-                    // 実習時間の条件を満たさない場合は警告
-                    var time = company["実習時間"];
-                    if (!checkTrainingTime(time)) {
-                        alert("実習時間が条件を満たしていません。別の会社を選択してください。");
-                        selectedCompany.value = ''; // 選択をリセット
-                        companyDataDiv.style.display = 'none'; // 会社データのセクションを非表示にする
-                        mapDiv.style.display = 'none'; // マップを非表示にする
-                        distanceInfoDiv.innerHTML = ''; // 距離情報をクリアする
-                        routeInfoDiv.innerHTML = ''; // ルート情報をクリアする
-                    }
+            // 選択された会社のデータを表示
+            selectCompanyDropdown.addEventListener('change', function () {
+                var selectedCompany = this.value;
+                if (selectedCompany) {
+                    displayCompanyData(selectedCompany);
                 }
             });
-
-            // 出発地点フォームの送信時の処理
-            departureForm.addEventListener('submit', function (event) {
-                event.preventDefault(); // フォームのデフォルトの送信を防止
-
-                var departure = document.getElementById('departure').value;
-
-                // 出発地点が入力されている場合にのみ距離とルートを表示
-                if (departure) {
-                    var selectedCompanyName = selectedCompany.value;
-                    var company = companyData[selectedCompanyName];
-                    var companyAddress = company["住所"];
-
-                    // Google Maps APIを使用して距離とルートを計算
-                    calculateDistance(departure, companyAddress);
-                }
-            });
-
-            // Google Mapsを初期化する関数
-            function initMap(destinationAddress) {
-                var map = new google.maps.Map(document.getElementById('map'), {
-                    zoom: 10,
-                    center: { lat: 37.7749, lng: -122.4194 } // San Franciscoの座標
-                });
-
-                var geocoder = new google.maps.Geocoder();
-                geocodeAddress(geocoder, map, destinationAddress);
-            }
-
-            // 住所を緯度経度に変換する関数
-            function geocodeAddress(geocoder, resultsMap, address) {
-                geocoder.geocode({ 'address': address }, function (results, status) {
-                    if (status === 'OK') {
-                        resultsMap.setCenter(results[0].geometry.location);
-                        var marker = new google.maps.Marker({
-                            map: resultsMap,
-                            position: results[0].geometry.location
-                        });
-                    } else {
-                        alert('Geocode was not successful for the following reason: ' + status);
-                    }
-                });
-            }
-
-            // 実習時間の条件をチェックする関数
-            function checkTrainingTime(time) {
-                // ここで実習時間の条件を満たしているかどうかを確認するロジックを実装
-                // 例: 8:00 - 17:00の間であればtrueを返す
-                var startTime = time.split(' - ')[0];
-                var endTime = time.split(' - ')[1];
-                var startHour = parseInt(startTime.split(':')[0]);
-                var endHour = parseInt(endTime.split(':')[0]);
-                return startHour >= 8 && endHour <= 17; // 例として、8時から17時の間を満たすという条件を追加
-            }
-
-            // 距離とルートを計算する関数
-            function calculateDistance(origin, destination) {
-                var service = new google.maps.DistanceMatrixService();
-                service.getDistanceMatrix(
-                    {
-                        origins: [origin],
-                        destinations: [destination],
-                        travelMode: 'DRIVING',
-                    },
-                    function (response, status) {
-                        if (status !== 'OK') {
-                            alert('Error was: ' + status);
-                        } else {
-                            var distanceText = response.rows[0].elements[0].distance.text;
-                            var durationText = response.rows[0].elements[0].duration.text;
-                            distanceInfoDiv.innerHTML = '距離: ' + distanceText + '<br>所要時間: ' + durationText;
-
-                            // ルート情報を表示
-                            var directionsService = new google.maps.DirectionsService();
-                            var directionsRenderer = new google.maps.DirectionsRenderer();
-                            directionsRenderer.setMap(map);
-
-                            var request = {
-                                origin: origin,
-                                destination: destination,
-                                travelMode: 'DRIVING'
-                            };
-                            directionsService.route(request, function (result, status) {
-                                if (status == 'OK') {
-                                    directionsRenderer.setDirections(result);
-                                }
-                            });
-                        }
-                    }
-                );
-            }
         });
-    </script>
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&libraries=places&callback=initMap">
+
+        // 出発地点フォームの処理
+        document.getElementById('departureForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // デフォルトのフォーム送信を防止
+
+            var formData = new FormData(this);
+            var departure = formData.get('departure');
+
+            if (!departure) {
+                alert('出発地点を入力してください。');
+                return;
+            }
+
+            var selectedCompany = document.getElementById('selected_company').value;
+
+            if (!selectedCompany) {
+                alert('会社を選択してください。');
+                return;
+            }
+
+            // 出発地点から会社までの距離とルートを表示
+            displayDistanceAndRoute(selectedCompany, departure);
+        });
+
+        // 検索フォームから一致する会社を取得する関数
+        function getMatchingCompanies(formData) {
+            var lunch = formData.get('lunch');
+            var field = formData.get('field');
+            var professors = formData.getAll('professors');
+            var interesting = formData.get('interesting');
+            var trainingTime = formData.get('trainingTime');
+
+            var companies = Object.keys(companyData);
+
+            return companies.filter(function (company) {
+                return (companyData[company]['昼食'] === lunch ||
+                    companyData[company]['分野'].includes(field) ||
+                    professors.some(function (professor) {
+                        return companyData[company]['担当教授'] === professor;
+                    }) ||
+                    companyData[company]['面白さ'] === interesting);
+                // 実習時間の条件を追加
+                // 実習時間が空白の場合は常にtrueを返す（条件を無視する）
+                if (!trainingTime) return true;
+
+                // 実習時間が入力されている場合、部分一致で検索する
+                var companyTrainingTime = companyData[company]['実習時間'];
+                return companyTrainingTime.includes(trainingTime);
+            });
+        }
+
+        // 選択された会社のデータを表示する関数
+        function displayCompanyData(company) {
+            var companyDataSection = document.getElementById('companyData');
+            companyDataSection.style.display = 'block';
+
+            var companyInfo = companyData[company];
+            var companyDataList = document.getElementById('companyDataList');
+            companyDataList.innerHTML = '';
+            for (var key in companyInfo) {
+                var listItem = document.createElement('li');
+                listItem.textContent = `${key}: ${companyInfo[key]}`;
+                companyDataList.appendChild(listItem);
+            }
+        }
+
+        // 出発地点から会社までの距離とルートを表示する関数
+        function displayDistanceAndRoute(company, departure) {
+            var companyInfo = companyData[company];
+            var companyAddress = companyInfo['住所'];
+
+            // ダミーデータ: 距離とルート情報を取得
+            var distance = companyInfo['距離'];
+            var route = `出発地点: ${departure} から ${company} の所在地 ${companyAddress} までのルート`;
+
+            // 距離情報を表示
+            var distanceInfoSection = document.getElementById('distanceInfo');
+            distanceInfoSection.innerHTML = `<h3>距離情報</h3><p>${distance}</p>`;
+            distanceInfoSection.style.display = 'block';
+
+            // ルート情報を表示
+            var routeInfoSection = document.getElementById('routeInfo');
+            routeInfoSection.innerHTML = `<h3>ルート情報</h3><p>${route}</p>`;
+            routeInfoSection.style.display = 'block';
+
+            // Google Mapsに会社の位置を表示
+            showCompanyLocation(company, companyAddress);
+        }
+
+        // Google Mapsに会社の位置を表示する関数
+        function showCompanyLocation(company, address) {
+            var mapSection = document.getElementById('map');
+            mapSection.style.display = 'block';
+
+            // Google Mapsのスタティックマップを表示する
+            var mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=13&size=600x300&maptype=roadmap&markers=color:red%7Clabel:C%7C${encodeURIComponent(address)}&key=YOUR_GOOGLE_MAPS_API_KEY`;
+            mapSection.innerHTML = `<img src="${mapUrl}" alt="${company}の位置">`;
+        }
     </script>
 </body>
 
 </html>
+
 
 
 
