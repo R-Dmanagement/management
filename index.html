@@ -223,151 +223,186 @@
                 }
             };
 
+        var companiesMatchingCriteria = []; // 条件に合った会社を格納する配列
 
-        var map;
-        var geocoder;
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', function () {
+            var searchForm = document.getElementById('searchForm');
+            var companyInfo = document.getElementById('companyInfo');
+            var selectedCompany = document.getElementById('selected_company');
+            var companyDataList = document.getElementById('companyDataList');
+            var departureForm = document.getElementById('departureForm');
+            var companyDataDiv = document.getElementById('companyData');
+            var mapDiv = document.getElementById('map');
+            var distanceInfoDiv = document.getElementById('distanceInfo');
+            var routeInfoDiv = document.getElementById('routeInfo');
 
-        function initMap() {
-            // 初期位置（サンフランシスコの緯度経度）
-            var sanFrancisco = { lat: 37.7749, lng: -122.4194 };
+            // 会社検索フォームの送信時の処理
+            searchForm.addEventListener('submit', function (event) {
+                event.preventDefault(); // フォームのデフォルトの送信を防止
 
-            // 地図の初期化
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: sanFrancisco, // サンフランシスコの緯度経度
-                zoom: 8 // ズームレベル
-            });
+                var lunchOption = document.querySelector('input[name="lunch"]:checked').value;
+                var fieldOption = document.getElementById('field').value;
+                var professorsOptions = [...document.getElementById('professors').selectedOptions].map(opt => opt.value);
+                var interestingOption = document.getElementById('interesting').value;
 
-            geocoder = new google.maps.Geocoder();
-
-            // 検索フォームの送信時の処理
-            document.getElementById("searchForm").addEventListener("submit", function (event) {
-                event.preventDefault();
-
-                // 選択された昼食の提供の値を取得
-                var lunch = document.querySelector('input[name="lunch"]:checked').value;
-
-                // 選択された興味のある分野の値を取得
-                var field = document.getElementById("field").value;
-
-                // 選択された担当教授の値を取得
-                var professors = Array.from(document.getElementById("professors").selectedOptions)
-                    .map(option => option.value);
-
-                // 選択された実習の面白さの値を取得
-                var interesting = parseInt(document.getElementById("interesting").value);
-
-                // 選択された条件に合致する会社を抽出
-                var matchingCompanies = Object.keys(companyData).filter(function (company) {
-                    // 分野の比較
-                    var fields = companyData[company]["分野"].split(', ').map(field => field.trim());
-                    var fieldMatch = fields.includes(field);
-
-                    // 担当教授の比較
-                    var professorMatch = professors.every(professor => companyData[company]["担当教授"].includes(professor));
-
-                    // 面白さの比較
-                    var interestMatch = parseInt(companyData[company]["面白さ"]) >= interesting;
-
-                    // 全ての条件を満たす場合にtrueを返す
-                    return companyData[company]["昼食"] === lunch &&
-                        fieldMatch &&
-                        professorMatch &&
-                        interestMatch;
+                // 選択条件に合う会社を抽出
+                companiesMatchingCriteria = Object.keys(companyData).filter(function (companyName) {
+                    var company = companyData[companyName];
+                    return company["昼食"] === lunchOption &&
+                        company["分野"].includes(fieldOption) &&
+                        professorsOptions.includes(company["担当教授"]) &&
+                        parseInt(company["面白さ"]) >= parseInt(interestingOption);
                 });
 
-                // 選択肢を更新
-                updateCompanyOptions(matchingCompanies);
+                // 選択肢のセレクトボックスに結果を表示
+                selectedCompany.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
+                companiesMatchingCriteria.forEach(function (companyName) {
+                    var option = document.createElement('option');
+                    option.value = companyName;
+                    option.textContent = companyName;
+                    selectedCompany.appendChild(option);
+                });
 
-                // 選択された会社が表示されるようにする
-                document.getElementById("companyInfo").style.display = "block";
+                companyInfo.style.display = 'block'; // 会社選択のセクションを表示
+                companyDataDiv.style.display = 'none'; // 会社データのセクションを非表示にする
+                mapDiv.style.display = 'none'; // マップを非表示にする
+                distanceInfoDiv.innerHTML = ''; // 距離情報をクリアする
+                routeInfoDiv.innerHTML = ''; // ルート情報をクリアする
             });
 
-            // 選択された会社が変更された時の処理
-            document.getElementById("selected_company").addEventListener("change", function () {
-                var selectedCompany = this.value;
+            // 会社選択時の処理
+            selectedCompany.addEventListener('change', function () {
+                var selectedCompanyName = selectedCompany.value;
 
-                // 会社のデータを表示
-                displayCompanyData(selectedCompany);
+                if (selectedCompanyName) {
+                    var company = companyData[selectedCompanyName];
 
-                // 会社の住所を取得して地図を表示
-                geocodeAddress(companyData[selectedCompany]["住所"]);
-            });
-
-            // 出発地点の入力フォームの送信時の処理
-            document.getElementById("departureForm").addEventListener("submit", function (event) {
-                event.preventDefault();
-
-                // 出発地点を取得
-                var departure = document.getElementById("departure").value;
-
-                // 選択された会社を取得
-                var selectedCompany = document.getElementById("selected_company").value;
-
-                // 出発地点から会社までの情報を表示
-                displayDistanceInfo(departure, selectedCompany);
-            });
-        }
-
-        // 選択肢の更新
-        function updateCompanyOptions(companies) {
-            var select = document.getElementById("selected_company");
-            select.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
-
-            companies.forEach(function (company) {
-                var option = document.createElement("option");
-                option.value = company;
-                option.textContent = company;
-                select.appendChild(option);
-            });
-        }
-
-        // 会社のデータを表示
-        function displayCompanyData(company) {
-            var companyDataDiv = document.getElementById("companyData");
-            companyDataDiv.style.display = "block";
-
-            var companyDataList = document.getElementById("companyDataList");
-            companyDataList.innerHTML = ""; // リセット
-
-            var data = companyData[company];
-            for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    var listItem = document.createElement("li");
-                    listItem.textContent = `${key}: ${data[key]}`;
-                    companyDataList.appendChild(listItem);
-                }
-            }
-        }
-
-        // 住所をもとに地図を表示
-        function geocodeAddress(address) {
-            geocoder.geocode({ 'address': address }, function (results, status) {
-                if (status === 'OK') {
-                    map.setCenter(results[0].geometry.location);
-                    var marker = new google.maps.Marker({
-                        map: map,
-                        position: results[0].geometry.location
+                    // 会社データを表示
+                    companyDataList.innerHTML = '';
+                    Object.keys(company).forEach(function (key) {
+                        var li = document.createElement('li');
+                        li.textContent = `${key}: ${company[key]}`;
+                        companyDataList.appendChild(li);
                     });
-                } else {
-                    alert('地図の読み込み中に問題が発生しました: ' + status);
+
+                    companyDataDiv.style.display = 'block'; // 会社データのセクションを表示
+                    mapDiv.style.display = 'block'; // マップを表示
+
+                    // Google Mapsを初期化して表示
+                    initMap(company["住所"]);
+
+                    // 実習時間の条件を満たさない場合は警告
+                    var time = company["実習時間"];
+                    if (!checkTrainingTime(time)) {
+                        alert("実習時間が条件を満たしていません。別の会社を選択してください。");
+                        selectedCompany.value = ''; // 選択をリセット
+                        companyDataDiv.style.display = 'none'; // 会社データのセクションを非表示にする
+                        mapDiv.style.display = 'none'; // マップを非表示にする
+                        distanceInfoDiv.innerHTML = ''; // 距離情報をクリアする
+                        routeInfoDiv.innerHTML = ''; // ルート情報をクリアする
+                    }
                 }
             });
-        }
 
-        // 出発地点からの距離とルート情報を表示
-        function displayDistanceInfo(departure, company) {
-            var distanceInfo = document.getElementById("distanceInfo");
-            var routeInfo = document.getElementById("routeInfo");
+            // 出発地点フォームの送信時の処理
+            departureForm.addEventListener('submit', function (event) {
+                event.preventDefault(); // フォームのデフォルトの送信を防止
 
-            // ここで出発地点からの距離とルート情報を表示するための実装を行う
-            // この例では、単にテキストとして表示する
-            distanceInfo.textContent = `${departure} から ${company} までの距離: ${companyData[company]["距離"]}`;
-            routeInfo.textContent = `出発地点からのルート: ここにルート情報を表示`;
-        }
+                var departure = document.getElementById('departure').value;
+
+                // 出発地点が入力されている場合にのみ距離とルートを表示
+                if (departure) {
+                    var selectedCompanyName = selectedCompany.value;
+                    var company = companyData[selectedCompanyName];
+                    var companyAddress = company["住所"];
+
+                    // Google Maps APIを使用して距離とルートを計算
+                    calculateDistance(departure, companyAddress);
+                }
+            });
+
+            // Google Mapsを初期化する関数
+            function initMap(destinationAddress) {
+                var map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 10,
+                    center: { lat: 37.7749, lng: -122.4194 } // San Franciscoの座標
+                });
+
+                var geocoder = new google.maps.Geocoder();
+                geocodeAddress(geocoder, map, destinationAddress);
+            }
+
+            // 住所を緯度経度に変換する関数
+            function geocodeAddress(geocoder, resultsMap, address) {
+                geocoder.geocode({ 'address': address }, function (results, status) {
+                    if (status === 'OK') {
+                        resultsMap.setCenter(results[0].geometry.location);
+                        var marker = new google.maps.Marker({
+                            map: resultsMap,
+                            position: results[0].geometry.location
+                        });
+                    } else {
+                        alert('Geocode was not successful for the following reason: ' + status);
+                    }
+                });
+            }
+
+            // 実習時間の条件をチェックする関数
+            function checkTrainingTime(time) {
+                // ここで実習時間の条件を満たしているかどうかを確認するロジックを実装
+                // 例: 8:00 - 17:00の間であればtrueを返す
+                var startTime = time.split(' - ')[0];
+                var endTime = time.split(' - ')[1];
+                var startHour = parseInt(startTime.split(':')[0]);
+                var endHour = parseInt(endTime.split(':')[0]);
+                return startHour >= 8 && endHour <= 17; // 例として、8時から17時の間を満たすという条件を追加
+            }
+
+            // 距離とルートを計算する関数
+            function calculateDistance(origin, destination) {
+                var service = new google.maps.DistanceMatrixService();
+                service.getDistanceMatrix(
+                    {
+                        origins: [origin],
+                        destinations: [destination],
+                        travelMode: 'DRIVING',
+                    },
+                    function (response, status) {
+                        if (status !== 'OK') {
+                            alert('Error was: ' + status);
+                        } else {
+                            var distanceText = response.rows[0].elements[0].distance.text;
+                            var durationText = response.rows[0].elements[0].duration.text;
+                            distanceInfoDiv.innerHTML = '距離: ' + distanceText + '<br>所要時間: ' + durationText;
+
+                            // ルート情報を表示
+                            var directionsService = new google.maps.DirectionsService();
+                            var directionsRenderer = new google.maps.DirectionsRenderer();
+                            directionsRenderer.setMap(map);
+
+                            var request = {
+                                origin: origin,
+                                destination: destination,
+                                travelMode: 'DRIVING'
+                            };
+                            directionsService.route(request, function (result, status) {
+                                if (status == 'OK') {
+                                    directionsRenderer.setDirections(result);
+                                }
+                            });
+                        }
+                    }
+                );
+            }
+        });
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&callback=initMap"></script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&libraries=places&callback=initMap">
+    </script>
 </body>
 
 </html>
+
 
 
