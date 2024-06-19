@@ -10,6 +10,10 @@
             background: url("background.jpg") no-repeat center center fixed;
             background-size: cover;
             padding: 20px;
+            color: white;
+        }
+        form {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -20,8 +24,8 @@
         <p>これは産学連携実習マッチングのテストアプリです</p>
         <h2>R&Dマネジメント研究室</h2>
 
-        <!-- Streamlitコンポーネント -->
-        <form id="searchForm" method="get">
+        <!-- 検索フォーム -->
+        <form id="searchForm">
             <label for="lunch">昼食の提供:</label><br>
             <input type="radio" id="lunchYes" name="lunch" value="あり">
             <label for="lunchYes">あり</label><br>
@@ -35,10 +39,6 @@
                 <option value="生産">生産</option>
             </select><br><br>
 
-            <label for="max_distance">大学からの最大距離(km):</label><br>
-            <input type="range" id="max_distance" name="max_distance" min="0" max="20" value="20">
-            <br><br>
-
             <label for="professors">担当教授:</label><br>
             <select id="professors" name="professors" multiple>
                 <option value="江面先生">江面先生</option>
@@ -51,13 +51,6 @@
                 <option value="茨木先生">茨木先生</option>
             </select><br><br>
 
-            <label for="start_time">実習開始時間:</label><br>
-            <input type="time" id="start_time" name="start_time" value="08:00"><br><br>
-
-            <label for="end_time">実習終了時間:</label><br>
-            <input type="time" id="end_time" name="end_time" value="15:00"><br><br>
-
-            <!-- 新しい選択肢として実習の面白さを追加 -->
             <label for="interesting">実習の面白さ:</label><br>
             <select id="interesting" name="interesting">
                 <option value="1">1 - あまり面白くない</option>
@@ -67,25 +60,25 @@
                 <option value="5">5 - 非常に面白い</option>
             </select><br><br>
 
-            <input type="submit" value="Submit">
+            <input type="submit" value="会社を検索">
         </form>
 
-        <!-- Streamlitからの出力 -->
-        <div>
-            <p>該当する会社が見つかりました:</p>
+        <!-- 選択された会社表示 -->
+        <div id="companyInfo">
+            <h3>該当する会社が見つかりました:</h3>
             <select id="selected_company" name="selected_company">
-                <!-- ここにJavaScriptで動的に生成されるオプションが入ります -->
+                <option value="" disabled selected>会社を選択してください</option>
             </select>
         </div>
 
-        <!-- 出発地点の入力 -->
-        <form id="departureForm" method="get">
+        <!-- 出発地点の入力フォーム -->
+        <form id="departureForm">
             <label for="departure">出発地点:</label><br>
             <input type="text" id="departure" name="departure"><br><br>
-            <input type="submit" value="Submit">
+            <input type="submit" value="出発地点から距離を確認">
         </form>
 
-        <!-- 会社データ -->
+        <!-- 会社データ表示 -->
         <div>
             <h3>会社データ</h3>
             <ul id="companyDataList">
@@ -93,10 +86,10 @@
             </ul>
         </div>
 
-        <!-- 会社までの距離とマップの表示 -->
-        <div>
+        <!-- 出発地点からの距離とマップ表示 -->
+        <div id="mapInfo">
             <h3>出発地点から会社までの情報</h3>
-            <p id="distanceInfo">出発地点から会社までの距離:</p>
+            <p id="distanceInfo">出発地点からの距離:</p>
             <p id="routeInfo">ルートの表示:</p>
             <iframe id="mapFrame" width="700" height="500" frameborder="0" style="border:0" allowfullscreen></iframe>
         </div>
@@ -223,40 +216,30 @@
                 }
             };
 
-        // フォームの送信を処理
+
+        // 検索フォームの送信を処理
         document.getElementById("searchForm").addEventListener("submit", function (event) {
             event.preventDefault(); // デフォルトの送信をキャンセル
 
-            // フォームデータを取得
             var formData = new FormData(event.target);
 
-            // 選択された分野を取得
             var selectedField = formData.get("field");
-
-            // 選択された担当教授を取得
             var selectedProfessors = formData.getAll("professors");
-
-            // 選択された昼食の有無を取得
             var lunchProvided = formData.get("lunch");
-
-            // 選択された実習の面白さを取得
             var interestingLevel = parseInt(formData.get("interesting"));
 
-            // マッチング条件に合う会社を選択
             var matchedCompanies = Object.keys(companyData).filter(function (company) {
                 var data = companyData[company];
-                // 分野、担当教授、昼食の提供、面白さを条件にする
                 return data["分野"].includes(selectedField) &&
                     selectedProfessors.some(function (professor) {
                         return data["担当教授"].includes(professor);
                     }) &&
                     (lunchProvided === "あり" || data["昼食"] === "なし") &&
-                    parseInt(data["面白さ"]) >= interestingLevel;
+                    data["面白さ"] >= interestingLevel;
             });
 
-            // 選択肢の更新
             var selectCompanyElement = document.getElementById("selected_company");
-            selectCompanyElement.innerHTML = ""; // 一旦クリア
+            selectCompanyElement.innerHTML = "";
 
             if (matchedCompanies.length === 0) {
                 var option = document.createElement("option");
@@ -275,76 +258,31 @@
         document.getElementById("departureForm").addEventListener("submit", function (event) {
             event.preventDefault(); // デフォルトの送信をキャンセル
 
-            // フォームデータを取得
             var formData = new FormData(event.target);
-
-            // 出発地点を取得
             var departure = formData.get("departure");
 
-            // Google Maps API を使用して会社までの距離とマップを表示
             var selectedCompany = document.getElementById("selected_company").value;
 
             if (selectedCompany in companyData) {
                 var companyAddress = companyData[selectedCompany]["住所"];
                 var mapFrame = document.getElementById("mapFrame");
 
-                // Google Maps の埋め込みリンクを作成
-                var googleMapsUrl = "https://www.google.com/maps/embed/v1/directions?key=YOUR_API_KEY&origin=" +
-                    encodeURI(departure) + "&destination=" + encodeURI(companyAddress);
+                var googleMapsUrl = "https://www.google.com/maps/embed/v1/directions?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&origin=" +
+                    encodeURIComponent(departure) + "&destination=" + encodeURIComponent(companyAddress);
 
-                // マップフレームのURLを更新
                 mapFrame.src = googleMapsUrl;
 
-                // 距離情報を表示
-                var distanceInfo = document.getElementById("distanceInfo");
-                distanceInfo.textContent = "出発地点から " + companyData[selectedCompany]["距離"] + " の距離にあります。";
-
-                // ルート情報を表示
-                var routeInfo = document.getElementById("routeInfo");
-                routeInfo.innerHTML = '<a href="' + googleMapsUrl + '" target="_blank">ルートを表示</a>';
-            }
-        });
-
-        // 初期読み込み時の会社リストとマップの更新
-        document.addEventListener("DOMContentLoaded", function () {
-            var selectCompanyElement = document.getElementById("selected_company");
-            selectCompanyElement.addEventListener("change", function () {
-                // 会社が選択されたときにマップを更新する
-                var departureForm = document.getElementById("departureForm");
-                if (departureForm.reportValidity()) {
-                    departureForm.dispatchEvent(new Event("submit"));
-                }
-            });
-
-            // 初期選択肢の作成
-            var option = document.createElement("option");
-            option.text = "会社を選択してください";
-            selectCompanyElement.add(option);
-
-            // 初期マップの表示
-            var mapFrame = document.getElementById("mapFrame");
-            mapFrame.src = "https://www.google.com/maps/embed/v1/place?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&q=新潟県三条市下保内４０１ー１７";
-
-            // 初期会社データの表示
-            var companyDataList = document.getElementById("companyDataList");
-            for (var company in companyData) {
-                if (companyData.hasOwnProperty(company)) {
-                    var listItem = document.createElement("li");
-                    var data = companyData[company];
-                    listItem.textContent = company + ": 住所 - " + data["住所"] +
-                        ", 昼食 - " + data["昼食"] +
-                        ", 分野 - " + data["分野"] +
-                        ", 担当教授 - " + data["担当教授"] +
-                        ", 実習時間 - " + data["実習時間"] +
-                        ", 面白さ - " + data["面白さ"];
-                    companyDataList.appendChild(listItem);
-                }
+                document.getElementById("distanceInfo").textContent = "出発地点から " + companyData[selectedCompany]["距離"] + " の距離です。";
+                document.getElementById("routeInfo").textContent = "ルートの表示: " + departure + " から " + companyAddress + " までのルート";
+            } else {
+                alert("会社を選択してください。");
             }
         });
     </script>
 </body>
 
 </html>
+
 
 
 
