@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,9 +16,13 @@
         form {
             margin-bottom: 20px;
         }
+
+        #map {
+            width: 100%;
+            height: 500px;
+        }
     </style>
 </head>
-
 <body>
     <div class="reportview-container">
         <h1>産学連携実習マッチングアプリ</h1>
@@ -36,6 +39,7 @@
 
             <label for="field">興味のある分野:</label><br>
             <select id="field" name="field">
+                <option value="">すべて</option>
                 <option value="企画">企画</option>
                 <option value="開発">開発</option>
                 <option value="生産">生産</option>
@@ -43,6 +47,7 @@
 
             <label for="professors">担当教授:</label><br>
             <select id="professors" name="professors" multiple>
+                <option value="">すべて</option>
                 <option value="江面先生">江面先生</option>
                 <option value="野口先生">野口先生</option>
                 <option value="若木先生">若木先生</option>
@@ -55,6 +60,7 @@
 
             <label for="interesting">実習の面白さ:</label><br>
             <select id="interesting" name="interesting">
+                <option value="">すべて</option>
                 <option value="1">1 - あまり面白くない</option>
                 <option value="2">2 - 少し面白い</option>
                 <option value="3">3 - 普通</option>
@@ -92,8 +98,7 @@
         <div id="mapInfo" style="display: none;">
             <h3>出発地点から会社までの情報</h3>
             <p id="distanceInfo">出発地点からの距離:</p>
-            <p id="routeInfo">ルートの表示:</p>
-            <iframe id="mapFrame" width="700" height="500" frameborder="0" style="border:0" allowfullscreen></iframe>
+            <div id="map"></div>
         </div>
     </div>
 
@@ -218,130 +223,97 @@
                 }
             };
 
-        // 検索フォームの送信時の処理
-        document.getElementById("searchForm").addEventListener("submit", function(event) {
-            event.preventDefault();
+        // ページが読み込まれたときの初期設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // 会社検索フォームの処理
+            var searchForm = document.getElementById('searchForm');
+            searchForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // デフォルトの送信を無効化
+                var lunchValue = document.querySelector('input[name="lunch"]:checked').value;
+                var field = document.getElementById('field').value;
+                var professors = Array.from(document.getElementById('professors').selectedOptions).map(option => option.value);
+                var interesting = document.getElementById('interesting').value;
 
-            // 選択された昼食の提供の値を取得
-            var lunch = document.querySelector('input[name="lunch"]:checked').value;
+                // ここで条件に合致する会社を選択肢に追加する処理
+                var selectedCompanyDropdown = document.getElementById('selected_company');
+                selectedCompanyDropdown.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
 
-            // 選択された興味のある分野の値を取得
-            var field = document.getElementById("field").value;
+                Object.keys(companyData).forEach(function(company) {
+                    var data = companyData[company];
+                    if ((lunchValue === '' || data['昼食'] === lunchValue) &&
+                        (field === '' || data['分野'].includes(field)) &&
+                        (professors.length === 0 || professors.some(professor => data['担当教授'].includes(professor))) &&
+                        (interesting === '' || data['面白さ'] === interesting)) {
+                        var option = document.createElement('option');
+                        option.value = company;
+                        option.textContent = company;
+                        selectedCompanyDropdown.appendChild(option);
+                    }
+                });
 
-            // 選択された担当教授の値を取得
-            var professors = Array.from(document.getElementById("professors").selectedOptions)
-                .map(option => option.value);
-
-            // 選択された実習の面白さの値を取得
-            var interesting = parseInt(document.getElementById("interesting").value);
-
-            // 選択された条件に合致する会社を抽出
-            var matchingCompanies = Object.keys(companyData).filter(function(company) {
-                // 分野の比較
-                var fields = companyData[company]["分野"].split(', ').map(field => field.trim());
-                var fieldMatch = fields.includes(field);
-
-                // 担当教授の比較
-                var professorMatch = professors.every(professor => companyData[company]["担当教授"].includes(professor));
-
-                // 面白さの比較
-                var interestMatch = parseInt(companyData[company]["面白さ"]) >= interesting;
-
-                // 全ての条件を満たす場合にtrueを返す
-                return companyData[company]["昼食"] === lunch &&
-                    fieldMatch &&
-                    professorMatch &&
-                    interestMatch;
+                // 表示領域を表示
+                var companyInfo = document.getElementById('companyInfo');
+                companyInfo.style.display = 'block';
             });
 
-            // 選択肢を更新
-            updateCompanyOptions(matchingCompanies);
+            // 出発地点フォームの処理
+            var departureForm = document.getElementById('departureForm');
+            departureForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // デフォルトの送信を無効化
+                var departure = document.getElementById('departure').value;
+                var selectedCompany = document.getElementById('selected_company').value;
 
-            // 選択された会社が表示されるようにする
-            document.getElementById("companyInfo").style.display = "block";
-        });
+                if (selectedCompany !== '') {
+                    // 会社データを表示
+                    displayCompanyData(selectedCompany);
+                    // Google Mapsを表示
+                    displayMap(selectedCompany);
+                    // 出発地点からの距離情報を表示
+                    displayDistanceInfo(departure, selectedCompany);
 
-        // 選択された会社が変更された時の処理
-        document.getElementById("selected_company").addEventListener("change", function() {
-            var selectedCompany = this.value;
+                    // 表示領域を表示
+                    var companyDataDiv = document.getElementById('companyData');
+                    companyDataDiv.style.display = 'block';
 
-            // 会社のデータを表示
-            displayCompanyData(selectedCompany);
-
-            // Google Mapsの地図を表示
-            displayMap(selectedCompany);
-        });
-
-        // 出発地点の入力フォームの送信時の処理
-        document.getElementById("departureForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-
-            // 出発地点を取得
-            var departure = document.getElementById("departure").value;
-
-            // 選択された会社を取得
-            var selectedCompany = document.getElementById("selected_company").value;
-
-            // 出発地点から会社までの情報を表示
-            displayDistanceInfo(departure, selectedCompany);
-        });
-
-        // 選択肢の更新
-        function updateCompanyOptions(companies) {
-            var select = document.getElementById("selected_company");
-            select.innerHTML = '<option value="" disabled selected>会社を選択してください</option>';
-
-            companies.forEach(function(company) {
-                var option = document.createElement("option");
-                option.value = company;
-                option.textContent = company;
-                select.appendChild(option);
+                    var mapInfoDiv = document.getElementById('mapInfo');
+                    mapInfoDiv.style.display = 'block';
+                }
             });
-        }
+        });
 
-        // 会社のデータを表示
+        // 会社のデータを表示する関数
         function displayCompanyData(company) {
-            var companyDataDiv = document.getElementById("companyData");
-            companyDataDiv.style.display = "block";
-
-            var companyDataList = document.getElementById("companyDataList");
-            companyDataList.innerHTML = ""; // リセット
-
+            var companyDataDiv = document.getElementById('companyData');
+            companyDataDiv.style.display = 'block';
+            var companyDataList = document.getElementById('companyDataList');
+            companyDataList.innerHTML = ''; // リセット
             var data = companyData[company];
             for (var key in data) {
                 if (data.hasOwnProperty(key)) {
-                    var listItem = document.createElement("li");
+                    var listItem = document.createElement('li');
                     listItem.textContent = `${key}: ${data[key]}`;
                     companyDataList.appendChild(listItem);
                 }
             }
         }
 
-        // Google Mapsの地図を表示
+        // Google Mapsの地図を表示する関数
         function displayMap(company) {
-            var mapInfoDiv = document.getElementById("mapInfo");
-            mapInfoDiv.style.display = "block";
-
-            // Google Mapsの埋め込み地図URLを生成
-            var address = companyData[company]["住所"];
-            var mapsUrl = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(address)}&key=YOUR_API_KEY`;
-
-            // iframeのsrc属性に設定
-            var mapFrame = document.getElementById("mapFrame");
-            mapFrame.src = mapsUrl;
+            var mapInfoDiv = document.getElementById('mapInfo');
+            mapInfoDiv.style.display = 'block';
+            var address = companyData[company]['住所'];
+            var mapsUrl = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(address)}&key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw`;
+            var mapFrame = document.getElementById('map');
+            mapFrame.innerHTML = `<iframe width="100%" height="500" frameborder="0" style="border:0;" src="${mapsUrl}" allowfullscreen></iframe>`;
         }
 
-        // 出発地点からの距離とルート情報を表示
+        // 出発地点からの距離とルート情報を表示する関数
         function displayDistanceInfo(departure, company) {
-            var distanceInfo = document.getElementById("distanceInfo");
-            var routeInfo = document.getElementById("routeInfo");
-
-            // ここで出発地点からの距離とルート情報を表示するための実装を行う
-            // この例では、単にテキストとして表示する
-            distanceInfo.textContent = `${departure} から ${company} までの距離: ${companyData[company]["距離"]}`;
+            var distanceInfo = document.getElementById('distanceInfo');
+            var routeInfo = document.getElementById('routeInfo');
+            distanceInfo.textContent = `${departure} から ${company} までの距離: ${companyData[company]['距離']}`;
             routeInfo.textContent = `出発地点からのルート: ここにルート情報を表示`;
         }
     </script>
 </body>
-
 </html>
