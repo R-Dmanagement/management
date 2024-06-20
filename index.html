@@ -20,6 +20,7 @@
         #map {
             width: 100%;
             height: 500px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -273,8 +274,6 @@
                     displayMap(selectedCompany);
                     // 出発地点からの距離情報を表示
                     displayDistanceInfo(departure, selectedCompany);
-                    // 出発地点からのルート情報を表示
-                    displayRouteInfo(departure, selectedCompany);
 
                     // 表示領域を表示
                     var companyDataDiv = document.getElementById('companyData');
@@ -354,6 +353,11 @@
                                     var modeInfo = document.createElement('p');
                                     modeInfo.textContent = `${mode}: ${info.duration.text} (${info.distance.text})`;
                                     travelModesDiv.appendChild(modeInfo);
+
+                                    // ルート表示
+                                    if (mode === 'DRIVING' || mode === 'BICYCLING' || mode === 'WALKING') {
+                                        displayRouteInfo(departure, company, mode);
+                                    }
                                 } else {
                                     alert('交通手段情報の取得に失敗しました: ' + status);
                                 }
@@ -365,28 +369,28 @@
         }
 
         // 出発地点からのルート情報を表示する関数
-        function displayRouteInfo(departure, company) {
+        function displayRouteInfo(departure, company, mode) {
             var directionsService = new google.maps.DirectionsService();
             var directionsRenderer = new google.maps.DirectionsRenderer();
 
             directionsRenderer.setMap(new google.maps.Map(document.getElementById('map'), {
-                zoom: 7,
+                zoom: 12,
                 center: { lat: parseFloat(companyData[company]['緯度']), lng: parseFloat(companyData[company]['経度']) }
             }));
 
             var request = {
                 origin: departure,
                 destination: companyData[company]['住所'],
-                travelMode: 'DRIVING'
+                travelMode: mode
             };
 
             directionsService.route(request, function(result, status) {
                 if (status === 'OK') {
                     directionsRenderer.setDirections(result);
                     var routeInfo = document.getElementById('routeInfo');
-                    routeInfo.textContent = `出発地点からのルート: ${result.routes[0].summary}`;
+                    routeInfo.textContent += `\n${mode}のルート: ${result.routes[0].summary}`;
                 } else {
-                    alert('ルート情報の取得に失敗しました: ' + status);
+                    alert(`${mode}のルート情報の取得に失敗しました: ` + status);
                 }
             });
         }
@@ -396,4 +400,3 @@
     </script>
 </body>
 </html>
-
