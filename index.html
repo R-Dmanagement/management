@@ -100,6 +100,7 @@
             <p id="distanceInfo">出発地点からの距離:</p>
             <p id="routeInfo">出発地点からのルート:</p>
             <div id="map"></div>
+            <div id="travelModes"></div>
         </div>
     </div>
 
@@ -281,11 +282,13 @@
 
                     var mapInfoDiv = document.getElementById('mapInfo');
                     mapInfoDiv.style.display = 'block';
+                } else {
+                    alert('会社を選択してください。');
                 }
             });
         });
 
-        // 会社のデータを表示する関数
+        // 選択した会社のデータを表示する関数
         function displayCompanyData(company) {
             var companyDataList = document.getElementById('companyDataList');
             companyDataList.innerHTML = ''; // 初期化
@@ -330,6 +333,33 @@
                     var distance = response.rows[0].elements[0].distance.text;
                     var distanceInfo = document.getElementById('distanceInfo');
                     distanceInfo.textContent = `出発地点からの距離: ${distance}`;
+
+                    // 交通手段の選択肢を表示
+                    var travelModesDiv = document.getElementById('travelModes');
+                    travelModesDiv.innerHTML = '<h3>交通手段ごとの所要時間と距離</h3>';
+
+                    // 各交通手段に対するルート情報を表示
+                    var travelModes = ['DRIVING', 'BICYCLING', 'WALKING']; // 車、自転車、徒歩
+                    travelModes.forEach(function(mode) {
+                        service.getDistanceMatrix(
+                            {
+                                origins: [departure],
+                                destinations: [companyData[company]['住所']],
+                                travelMode: mode,
+                                unitSystem: google.maps.UnitSystem.METRIC
+                            },
+                            function(response, status) {
+                                if (status === 'OK') {
+                                    var info = response.rows[0].elements[0];
+                                    var modeInfo = document.createElement('p');
+                                    modeInfo.textContent = `${mode}: ${info.duration.text} (${info.distance.text})`;
+                                    travelModesDiv.appendChild(modeInfo);
+                                } else {
+                                    alert('交通手段情報の取得に失敗しました: ' + status);
+                                }
+                            }
+                        );
+                    });
                 }
             );
         }
@@ -351,10 +381,12 @@
             };
 
             directionsService.route(request, function(result, status) {
-                if (status == 'OK') {
+                if (status === 'OK') {
                     directionsRenderer.setDirections(result);
+                    var routeInfo = document.getElementById('routeInfo');
+                    routeInfo.textContent = `出発地点からのルート: ${result.routes[0].summary}`;
                 } else {
-                    window.alert('ルート情報の取得に失敗しました: ' + status);
+                    alert('ルート情報の取得に失敗しました: ' + status);
                 }
             });
         }
@@ -364,3 +396,4 @@
     </script>
 </body>
 </html>
+
