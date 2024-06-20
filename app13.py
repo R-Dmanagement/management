@@ -98,6 +98,7 @@
         <div id="mapInfo" style="display: none;">
             <h3>出発地点から会社までの情報</h3>
             <p id="distanceInfo">出発地点からの距離:</p>
+            <p id="routeInfo">出発地点からのルート:</p>
             <div id="map"></div>
         </div>
     </div>
@@ -223,6 +224,7 @@
                 }
             };
 
+
         // ページが読み込まれたときの初期設定
         document.addEventListener('DOMContentLoaded', function() {
             // 会社検索フォームの処理
@@ -270,6 +272,8 @@
                     displayMap(selectedCompany);
                     // 出発地点からの距離情報を表示
                     displayDistanceInfo(departure, selectedCompany);
+                    // 出発地点からのルート情報を表示
+                    displayRouteInfo(departure, selectedCompany);
 
                     // 表示領域を表示
                     var companyDataDiv = document.getElementById('companyData');
@@ -307,13 +311,43 @@
             mapFrame.innerHTML = `<iframe width="100%" height="500" frameborder="0" style="border:0;" src="${mapsUrl}" allowfullscreen></iframe>`;
         }
 
-        // 出発地点からの距離とルート情報を表示する関数
+        // 出発地点からの距離情報を表示する関数
         function displayDistanceInfo(departure, company) {
             var distanceInfo = document.getElementById('distanceInfo');
-            var routeInfo = document.getElementById('routeInfo');
             distanceInfo.textContent = `${departure} から ${company} までの距離: ${companyData[company]['距離']}`;
-            routeInfo.textContent = `出発地点からのルート: ここにルート情報を表示`;
+        }
+
+        // 出発地点からのルート情報を表示する関数
+        function displayRouteInfo(departure, company) {
+            var directionsService = new google.maps.DirectionsService();
+            var directionsRenderer = new google.maps.DirectionsRenderer();
+
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 7,
+                center: {lat: 41.85, lng: -87.65} // 中心の初期設定（適宜変更）
+            });
+
+            directionsRenderer.setMap(map);
+
+            var start = departure;
+            var end = companyData[company]['住所'];
+
+            var request = {
+                origin: start,
+                destination: end,
+                travelMode: 'DRIVING'
+            };
+
+            directionsService.route(request, function(response, status) {
+                if (status == 'OK') {
+                    directionsRenderer.setDirections(response);
+                } else {
+                    window.alert('ルート検索が失敗しました: ' + status);
+                }
+            });
         }
     </script>
+    <!-- Google Maps APIの読み込み -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC8E0eIwP5JLXT5IWIDJiLqlhM8fh9qLOw&callback=initMap"></script>
 </body>
 </html>
